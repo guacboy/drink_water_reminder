@@ -1,6 +1,6 @@
 from win10toast import ToastNotifier
 from tkinter import *
-import time
+import threading
 
 toast = ToastNotifier()
 root = Tk()
@@ -10,6 +10,7 @@ root.title("Drink Water Reminder")
 root.geometry("340x380")
 root.config(background="#454545")
 
+count = 5
 is_on = False
 
 # widget management
@@ -30,7 +31,11 @@ class Util:
 
 # main app
 class App:
-    def main() -> None:
+    def main() -> bool:
+        global current_status
+        global start_button
+        global timer_label
+        
         title_label = Util.create_label(root)
         title_label.config(text="Drink Water Reminder")
         title_label.pack(side=TOP,
@@ -41,47 +46,55 @@ class App:
         status_label.pack(side=TOP)
         
         current_status = Util.create_label(root)
-        App.update_status(current_status,
-                          is_on)
         current_status.pack(side=TOP)
         
+        timer_label = Util.create_label(root)
+        timer_label.config(text="20:00")
+        timer_label.pack(side=TOP,
+                         pady=50)
+        
         start_button = Util.create_button(root)
-        start_button.config(text="START",
-                            command=lambda: App.update_status(current_status,
-                                                              True))
         start_button.pack(side=BOTTOM,
                           pady=20)
         
-    def update_status(current_status,
-                      status) -> BooleanVar:
+        App.update(False)
+    
+    # updates the text display
+    def update(status) -> None:
+        global is_on
+
         is_on = status
         
         if is_on:
             current_status.config(text="ON",
                                   fg="#07fe3b")
+            start_button.config(text="STOP",
+                                command=lambda: App.update(False))
         else:
             current_status.config(text="OFF",
                                   fg="#fa0001")
-        
-        return is_on
+            start_button.config(text="START",
+                                command=lambda: [App.update(True), App.timer(count)])
 
+    # 20 mins delay before each notification
+    def timer(count) -> None:
+        timer_label.config(text=count)
+        
+        if count > 0 and is_on: # counts down each second
+            root.after(1000, App.timer, count - 1)
+        elif count <= 0: # resets timer
+            threading.Thread(target=App.reminder, daemon=True).start()
+            root.after(1000, App.timer, 10)
+    
     # reminder controls
     def reminder() -> None:
-        print("Timer initiated.")
-        time.sleep(1200) # 20 mins delay before each notification
-        print("Timer completed.")
-        
         print("Message printed.")
         toast.show_toast(
             title="Hydrate!",
             msg="Drink water, please.",
-            duration = 15,
+            duration = 5,
         )
         print("Message deleted.")
-        
-        # calls itself if enabled
-        if is_on:
-            App.reminder()
 
 if __name__ == "__main__":
     App.main()
