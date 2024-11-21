@@ -10,7 +10,10 @@ root.title("Drink Water Reminder")
 root.geometry("340x380")
 root.config(background="#454545")
 
-count = 5
+count_in_minutes = 20
+reset_minutes = count_in_minutes
+count_in_seconds = 0
+reset_seconds = 59
 is_on = False
 
 # widget management
@@ -74,17 +77,26 @@ class App:
             current_status.config(text="OFF",
                                   fg="#fa0001")
             start_button.config(text="START",
-                                command=lambda: [App.update(True), App.timer(count)])
+                                command=lambda: [App.update(True), App.timer(count_in_minutes,
+                                                                             count_in_seconds)])
 
     # 20 mins delay before each notification
-    def timer(count) -> None:
-        timer_label.config(text=count)
-        
-        if count > 0 and is_on: # counts down each second
-            root.after(1000, App.timer, count - 1)
-        elif count <= 0: # resets timer
-            threading.Thread(target=App.reminder, daemon=True).start()
-            root.after(1000, App.timer, 10)
+    def timer(count_in_minutes: int,
+              count_in_seconds: int) -> None:
+        if is_on:
+            # if count_in_seconds == 60:
+            #     timer_label.config(text=f"{count_in_minutes:02}:00")
+            # else:
+            timer_label.config(text=f"{count_in_minutes:02}:{count_in_seconds:02}")
+            
+            
+            if count_in_minutes > 0 and count_in_seconds == 0: # counts down minute and resets seconds
+                root.after(1000, App.timer, count_in_minutes - 1, reset_seconds)
+            elif count_in_minutes == 0 and count_in_seconds == 0: # plays reminder and resets timer
+                threading.Thread(target=App.reminder, daemon=True).start()
+                root.after(1000, App.timer, reset_minutes, reset_seconds)
+            elif count_in_minutes >= 0: # counts down second
+                root.after(1000, App.timer, count_in_minutes, count_in_seconds - 1)
     
     # reminder controls
     def reminder() -> None:
@@ -92,7 +104,7 @@ class App:
         toast.show_toast(
             title="Hydrate!",
             msg="Drink water, please.",
-            duration = 5,
+            duration = 10,
         )
         print("Message deleted.")
 
