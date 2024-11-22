@@ -143,7 +143,7 @@ class App:
         toast.show_toast(
             title="Hydrate!",
             msg="Drink water, please.",
-            duration = 10,
+            duration = 60,
         )
         print("Message deleted.")
 
